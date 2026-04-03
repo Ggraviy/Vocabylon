@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Vocabylon — smart flashcards</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <header class="main-header">
+        <div class="header-content">
+            <div class="logo-section">
+                <span class="logo-icon">📖</span>
+                <div>
+                    <h1 class="logo-title">Vocabylon</h1>
+                    <p class="logo-subtitle">learn words. master levels. duel friends.</p>
+                </div>
+            </div>
+            <div class="header-controls">
+                <button class="theme-toggle" id="themeToggle">🌓</button>
+                <button class="btn ghost-btn" id="settingsNavBtn">⚙️ Settings</button>
+                <div class="user-section" id="userSection">
+                    <div class="user-avatar"><span id="userInitial">?</span></div>
+                    <span class="user-name" id="userName"></span>
+                    <button class="btn ghost-btn" id="logoutBtn">Logout</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ДОБАВЛЕН ОБЁРТОЧНЫЙ div class="workspace" -->
+    <div class="workspace">
+        <div class="app-container">
+            <div class="workspace-tabs">
+                <button class="workspace-tab active" data-view="home">Home</button>
+                <button class="workspace-tab" data-view="gallery">My words</button>
+                <button class="workspace-tab" data-view="stats">Statistics</button>
+                <button class="workspace-tab" data-view="settings">Settings</button>
+            </div>
+
+            <div id="homeView" class="view-content active">
+                <div class="dashboard-grid">
+                    <div class="glass-card chart-card">
+                        <h3>Progress by level</h3>
+                        <div class="chart-layout">
+                            <canvas id="levelDonut" width="200" height="200"></canvas>
+                            <div id="legendPanel" class="legend"></div>
+                        </div>
+                        <div class="daily-goal-panel">
+                            <div>🎯 Daily goal: <span id="dailyGoalDisplay">20</span> repetitions</div>
+                            <div class="goal-progress"><div id="dailyProgressFill" class="goal-fill"></div></div>
+                            <div id="goalStatus" style="font-size: 0.75rem; margin-top: 0.25rem;"></div>
+                            <button id="changeGoalBtn" class="small-btn">Change goal</button>
+                        </div>
+                    </div>
+                    <div class="glass-card actions-card">
+                        <div class="modes-grid">
+                            <button class="mode-btn" data-mode="random"><span class="mode-emoji">🎲</span><span class="mode-text">Random</span></button>
+                            <button class="mode-btn" data-mode="5"><span class="mode-emoji">5</span><span class="mode-text">words</span></button>
+                            <button class="mode-btn" data-mode="10"><span class="mode-emoji">10</span><span class="mode-text">words</span></button>
+                            <button class="mode-btn" data-mode="relay"><span class="mode-emoji">⚡</span><span class="mode-text">Relay</span></button>
+                            <button class="mode-btn" data-mode="duel"><span class="mode-emoji">👥</span><span class="mode-text">Duel</span></button>
+                            <button class="mode-btn" data-mode="hard"><span class="mode-emoji">🔥</span><span class="mode-text">Hard words</span></button>
+                        </div>
+                        <div class="add-word-form">
+                            <h4>➕ Add new word</h4>
+                            <input type="text" id="newWord" placeholder="English word" autocomplete="off">
+                            <input type="text" id="newTranslation" placeholder="Translation">
+                            <input type="text" id="newExample" placeholder="Example (optional)">
+                            <button id="addWordBtn" class="btn-primary">Save</button>
+                        </div>
+                        <div class="stats-row-mini">
+                            <div>🏆 XP: <span id="userXP">0</span> | Level <span id="userLvl">1</span></div>
+                            <div>🔥 Streak: <span id="streakCount">0</span> d</div>
+                            <div>🎖️ Achievements: <span id="achievementCount">0</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="galleryView" class="view-content">
+                <div class="gallery-header">
+                    <div class="gallery-controls">
+                        <input type="text" id="searchWord" placeholder="Search...">
+                        <select id="filterLevel">
+                            <option value="0">All levels</option>
+                            <option>1</option><option>2</option><option>3</option><option>4</option>
+                        </select>
+                        <button id="importSetBtn" class="btn secondary-btn">📥 Import sets</button>
+                    </div>
+                </div>
+                <div id="galleryGrid" class="gallery-grid"></div>
+            </div>
+
+            <div id="statsView" class="view-content">
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-icon">📚</div><div id="totalWordsStat">0</div><div>total words</div></div>
+                    <div class="stat-card"><div class="stat-icon">📊</div><div id="avgLevelStat">0</div><div>average level</div></div>
+                    <div class="stat-card"><div class="stat-icon">⭐</div><div id="topLevel4Stat">0</div><div>level 4</div></div>
+                </div>
+                <div class="leaderboard-panel glass-card">
+                    <h3>🏅 Leaderboard (weekly)</h3>
+                    <ul id="leaderboardList"></ul>
+                </div>
+                <div class="friends-panel glass-card">
+                    <h3>👥 Friends</h3>
+                    <div class="friend-add">
+                        <input type="text" id="friendUsername" placeholder="Username">
+                        <button id="addFriendBtn" class="btn small-btn">➕ Add</button>
+                    </div>
+                    <ul id="friendsList"></ul>
+                </div>
+            </div>
+
+            <div id="settingsView" class="view-content">
+                <div class="settings-panel glass-card">
+                    <h3>⚙️ Profile settings</h3>
+                    <div class="setting-item">
+                        <label>Your username (unique)</label>
+                        <input type="text" id="profileUsername" placeholder="Username">
+                        <button id="updateUsernameBtn" class="btn secondary-btn">Update</button>
+                    </div>
+                    <div class="setting-item">
+                        <label>Daily goal (repetitions)</label>
+                        <input type="number" id="dailyGoalInput" min="5" max="100" step="5">
+                        <button id="saveDailyGoalBtn" class="btn secondary-btn">Save</button>
+                    </div>
+                    <div class="setting-item">
+                        <label>Accent color</label>
+                        <select id="accentSelect">
+                            <option value="purple">Purple</option>
+                            <option value="blue">Blue</option>
+                            <option value="green">Green</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label>Theme</label>
+                        <select id="themeSelect">
+                            <option value="dark">Dark</option>
+                            <option value="light">Light</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="authModal" class="modal-overlay">
+        <div class="modal glass-card">
+            <div class="modal-header"><h3>Vocabylon</h3><button class="close-modal" id="closeAuth">&times;</button></div>
+            <div class="auth-tabs"><button class="auth-tab active" data-tab="login">Login</button><button class="auth-tab" data-tab="register">Register</button></div>
+            <form id="loginForm" class="auth-form active"><input type="email" id="loginEmail" placeholder="Email"><input type="password" id="loginPassword" placeholder="Password"><button type="submit" class="btn-primary">Login</button></form>
+            <form id="registerForm" class="auth-form"><input type="text" id="regUsername" placeholder="Username (unique)"><input type="email" id="regEmail" placeholder="Email"><input type="password" id="regPassword" placeholder="Password"><button type="submit" class="btn-primary">Register</button></form>
+            <button id="guestLoginBtn" class="btn secondary-btn full-width">Continue as guest</button>
+        </div>
+    </div>
+
+    <div id="goalModal" class="modal-overlay">
+        <div class="modal glass-card">
+            <div class="modal-header"><h3>Set daily goal</h3><button class="close-modal" id="closeGoalModal">&times;</button></div>
+            <input type="number" id="goalModalInput" min="5" max="100" step="5" placeholder="5-100">
+            <button id="confirmGoalBtn" class="btn-primary full-width" style="margin-top: 1rem;">Save</button>
+        </div>
+    </div>
+
+    <div id="trainingModal" class="modal-overlay">
+        <div class="training-modal glass-card">
+            <div class="training-header"><button id="closeTrainingBtn" class="close-modal">&times;</button><span id="trainingModeLabel"></span><span id="trainingProgress">0/0</span></div>
+            <div class="flip-card" id="flipCard"><div class="flip-inner"><div class="front"><div class="word-display" id="frontWord"></div><div class="flip-hint">click or Space</div></div><div class="back"><div class="word-display" id="backTranslation"></div><div id="exampleDisplay" class="example-text"></div></div></div></div>
+            <div class="level-buttons" id="levelButtons"><button data-level="1">1️⃣ Bad</button><button data-level="2">2️⃣ Okay</button><button data-level="3">3️⃣ Good</button><button data-level="4">4️⃣ Mastered</button></div>
+            <div id="relayLives" class="relay-info" style="display:none;">❤️ Lives: 3</div>
+        </div>
+    </div>
+
+    <div id="importModal" class="modal-overlay"><div class="modal glass-card"><div class="modal-header"><h3>Import word sets</h3><button class="close-modal" id="closeImport">&times;</button></div><div id="publicSetsList"></div><hr><div><button id="uploadJsonBtn" class="btn secondary-btn">📂 Upload JSON file</button><input type="file" id="jsonFileInput" accept=".json" style="display:none;"></div></div></div>
+
+    <div id="duelLobbyModal" class="modal-overlay"><div class="modal glass-card"><div class="modal-header"><h3>Duel</h3><button class="close-modal" id="closeDuelLobby">&times;</button></div><button id="createRoomBtn" class="btn-primary">Create room</button><div>or</div><input type="text" id="roomCodeInput" placeholder="Room code"><button id="joinRoomBtn" class="btn-primary">Join</button><div id="roomStatus"></div></div></div>
+
+    <div id="notificationToast" class="notification-container"></div>
+
+    <div id="achievementsModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header"><h3>🏆 My achievements</h3><button class="close-modal" id="closeAchievements">&times;</button></div>
+            <div id="achievementsList" class="achievements-list"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
